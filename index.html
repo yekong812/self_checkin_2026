@@ -8,8 +8,8 @@
 </head>
 <body>
   <div class="container">
-    <div class="logo">I'm G-root</div>
-    <h2>사전 체크인</h2>
+    <div class="logo" id="brand-name">I'm G-root</div>
+    <h2 id="page-title">사전 체크인</h2>
     
     <input type="text" id="gi" placeholder="기수 (예: 17기 또는 17)" />
     <input type="text" id="name" placeholder="이름" />
@@ -25,6 +25,18 @@
     <p id="error-message" style="color: red; margin-top: 12px; display: none;"></p>
   </div>
 
+  <script src="./scripts/config.js"></script>
+  <script>
+    (function applyConfig() {
+      const c = window.APP_CONFIG;
+      if (!c) return;
+      document.title = c.PAGE_TITLE_LOGIN;
+      const brand = document.getElementById("brand-name");
+      const title = document.getElementById("page-title");
+      if (brand) brand.textContent = c.BRAND_NAME;
+      if (title) title.textContent = c.PAGE_TITLE_LOGIN;
+    })();
+  </script>
   <script src="./scripts/main.js"></script>
 </body>
 </html>

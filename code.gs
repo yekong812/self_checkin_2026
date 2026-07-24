@@ -1,3 +1,17 @@
+/**
+ * 매년 / 스프레드시트 구조가 바뀔 때 여기만 수정하세요.
+ * 열 인덱스는 0부터 시작합니다. (A=0, B=1, C=2 ...)
+ */
+const CONFIG = {
+  SHEET_NAME: "회비명단",
+  COL_GI: 0,
+  COL_NAME: 1,
+  COL_PAID: 2,
+  COL_TSHIRT: 3, // D열 (티셔츠 사이즈)
+  PAID_VALUES: ["O", "o"],
+  HAS_HEADER: false,
+};
+
 function base64Decode(data) {
   const raw = data.replace(/^DATA:/, ''); // 'DATA:' 접두어 제거
   const decoded = Utilities.base64Decode(raw);
@@ -55,6 +69,36 @@ function jsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function isPaidStatus(status) {
+  return CONFIG.PAID_VALUES.some(
+    (v) => String(status).trim() === String(v).trim()
+  );
+}
+
+function getMinRequiredCols() {
+  return Math.max(CONFIG.COL_GI, CONFIG.COL_NAME, CONFIG.COL_PAID) + 1;
+}
+
+function getSheetDataRows(sheet) {
+  const lastRow = sheet.getLastRow();
+  // D열(티셔츠)처럼 일부만 채워진 열도 빠지지 않도록 최소 열 범위 보장
+  const lastCol = Math.max(
+    sheet.getLastColumn(),
+    getMinRequiredCols(),
+    (CONFIG.COL_TSHIRT || 0) + 1
+  );
+
+  if (lastRow === 0 || lastCol === 0) {
+    return null;
+  }
+
+  const data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
+  if (CONFIG.HAS_HEADER && data.length > 0) {
+    return data.slice(1);
+  }
+  return data;
+}
+
 // ✅ 1. 로그인 & 명단 확인
 function handleVerifyLoginAndPayment(gi, name) {
   try {
@@ -66,42 +110,36 @@ function handleVerifyLoginAndPayment(gi, name) {
       });
     }
     
-    const paymentSheet = ss.getSheetByName("명단");
+    const paymentSheet = ss.getSheetByName(CONFIG.SHEET_NAME);
     if (!paymentSheet) {
       return jsonResponse({ 
         success: false, 
-        error: "명단 시트를 찾을 수 없습니다." 
+        error: CONFIG.SHEET_NAME + " 시트를 찾을 수 없습니다." 
       });
     }
     
-    // 더 안전한 데이터 접근
-    const lastRow = paymentSheet.getLastRow();
-    const lastCol = paymentSheet.getLastColumn();
-    
-    if (lastRow === 0 || lastCol === 0) {
+    const data = getSheetDataRows(paymentSheet);
+    if (!data) {
       return jsonResponse({ 
         success: false, 
-        error: "명단 시트에 데이터가 없습니다." 
+        error: CONFIG.SHEET_NAME + " 시트에 데이터가 없습니다." 
       });
     }
-    
-    const data = paymentSheet.getRange(1, 1, lastRow, lastCol).getValues();
 
-    // 명단 시트에서 로그인 확인 및 명단 상태 확인
+    const minCols = getMinRequiredCols();
     let found = false;
     let paid = false;
     
     for (let row of data) {
-      if (!row || row.length < 3) continue; // 3열 미만이면 건너뛰기
+      if (!row || row.length < minCols) continue;
       
-      const rowGi = normalizeGi(row[0]); // 1열: 기수
-      const rowName = (row[1] + "").trim(); // 2열: 이름
-      const status = row[2]; // 3열: 명단 납부 여부
+      const rowGi = normalizeGi(row[CONFIG.COL_GI]);
+      const rowName = (row[CONFIG.COL_NAME] + "").trim();
+      const status = row[CONFIG.COL_PAID];
       
       if (rowGi === gi && rowName === name) {
         found = true;
-        // O 또는 o인 경우만 true 반환
-        if (status === "O" || status === "o") {
+        if (isPaidStatus(status)) {
           paid = true;
         }
         break;
@@ -137,29 +175,26 @@ function checkPaymentStatus(gi, name, ss) {
       return false;
     }
     
-    const paymentSheet = ss.getSheetByName("명단");
+    const paymentSheet = ss.getSheetByName(CONFIG.SHEET_NAME);
     if (!paymentSheet) {
-      console.error("명단 시트를 찾을 수 없습니다");
+      console.error(CONFIG.SHEET_NAME + " 시트를 찾을 수 없습니다");
       return false;
     }
     
-    // 더 안전한 데이터 접근
-    const lastRow = paymentSheet.getLastRow();
-    const lastCol = paymentSheet.getLastColumn();
-    
-    if (lastRow === 0 || lastCol === 0) {
-      console.error("명단 시트에 데이터가 없습니다");
+    const data = getSheetDataRows(paymentSheet);
+    if (!data) {
+      console.error(CONFIG.SHEET_NAME + " 시트에 데이터가 없습니다");
       return false;
     }
-    
-    const data = paymentSheet.getRange(1, 1, lastRow, lastCol).getValues();
+
+    const minCols = getMinRequiredCols();
 
     for (let row of data) {
-      if (!row || row.length < 3) continue; // 3열 미만이면 건너뛰기
+      if (!row || row.length < minCols) continue;
       
-      const rowGi = normalizeGi(row[0]); // 1열: 기수
-      const rowName = (row[1] + "").trim(); // 2열: 이름
-      const status = row[2]; // 3열: 명단 납부 여부
+      const rowGi = normalizeGi(row[CONFIG.COL_GI]);
+      const rowName = (row[CONFIG.COL_NAME] + "").trim();
+      const status = row[CONFIG.COL_PAID];
       
       // 숫자끼리 비교 (타입 일치)
       if (rowGi === normalizedGi && rowName === name) {
@@ -167,8 +202,7 @@ function checkPaymentStatus(gi, name, ss) {
         if (status === null || status === undefined || status === "") {
           return false;
         }
-        // O 또는 o인 경우만 true 반환
-        return status === "O" || status === "o";
+        return isPaidStatus(status);
       }
     }
     return false;
@@ -178,7 +212,7 @@ function checkPaymentStatus(gi, name, ss) {
   }
 }
 
-// ✅ 2. 사용자 정보 제공 (간소화 - 티셔츠 사이즈와 조 정보 제거)
+// ✅ 2. 사용자 정보 제공 (기수·이름·티셔츠 사이즈)
 function handleGetUserInfo(gi, name) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -188,11 +222,32 @@ function handleGetUserInfo(gi, name) {
         error: "스프레드시트에 접근할 수 없습니다." 
       });
     }
+
+    let tshirtSize = "";
+    const paymentSheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    if (paymentSheet) {
+      const data = getSheetDataRows(paymentSheet);
+      if (data) {
+        const minCols = Math.max(CONFIG.COL_GI, CONFIG.COL_NAME) + 1;
+        for (let row of data) {
+          if (!row || row.length < minCols) continue;
+          const rowGi = normalizeGi(row[CONFIG.COL_GI]);
+          const rowName = (row[CONFIG.COL_NAME] + "").trim();
+          if (rowGi === gi && rowName === name) {
+            if (row.length > CONFIG.COL_TSHIRT) {
+              tshirtSize = String(row[CONFIG.COL_TSHIRT] ?? "").trim();
+            }
+            break;
+          }
+        }
+      }
+    }
     
     return jsonResponse({
       success: true,
       gi: `${gi}기`,
-      name: name
+      name: name,
+      tshirtSize: tshirtSize
     });
     
   } catch (error) {
@@ -214,7 +269,7 @@ function testSimple() {
 
 function testFindUser() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const responseSheet = ss.getSheetByName("명단");
+  const responseSheet = ss.getSheetByName(CONFIG.SHEET_NAME);
   
   if (!responseSheet) {
     console.log("시트를 찾을 수 없습니다");
@@ -276,47 +331,47 @@ function testCheckPaymentStatusSimple() {
       return false;
     }
     
-    const paymentSheet = ss.getSheetByName("명단");
-    console.log("명단 시트:", paymentSheet ? "존재" : "null");
+    const paymentSheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+    console.log(CONFIG.SHEET_NAME + " 시트:", paymentSheet ? "존재" : "null");
     
     if (!paymentSheet) {
-      console.error("명단 시트를 찾을 수 없습니다");
+      console.error(CONFIG.SHEET_NAME + " 시트를 찾을 수 없습니다");
       return false;
     }
     
     const lastRow = paymentSheet.getLastRow();
     const lastCol = paymentSheet.getLastColumn();
-    console.log("명단 시트 크기:", lastRow, "행 x", lastCol, "열");
+    console.log(CONFIG.SHEET_NAME + " 시트 크기:", lastRow, "행 x", lastCol, "열");
     
-    if (lastRow === 0 || lastCol === 0) {
-      console.error("명단 시트에 데이터가 없습니다");
+    const data = getSheetDataRows(paymentSheet);
+    if (!data) {
+      console.error(CONFIG.SHEET_NAME + " 시트에 데이터가 없습니다");
       return false;
     }
     
-    const data = paymentSheet.getRange(1, 1, lastRow, lastCol).getValues();
-    console.log("명단 데이터 행 수:", data.length);
+    console.log(CONFIG.SHEET_NAME + " 데이터 행 수:", data.length);
+    const minCols = getMinRequiredCols();
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      if (!row || row.length < 3) {
-        console.log(`행 ${i}: 3열 미만, 건너뛰기`);
+      if (!row || row.length < minCols) {
+        console.log(`행 ${i}: ${minCols}열 미만, 건너뛰기`);
         continue;
       }
       
-      const rowGi = normalizeGi(row[0]); // 1열: 기수
-      const rowName = (row[1] + "").trim(); // 2열: 이름
-      const status = row[2]; // 3열: 명단 납부 여부
+      const rowGi = normalizeGi(row[CONFIG.COL_GI]);
+      const rowName = (row[CONFIG.COL_NAME] + "").trim();
+      const status = row[CONFIG.COL_PAID];
       
       console.log(`행 ${i}: 기수=${rowGi}, 이름=${rowName}, 상태=${status}, 찾는값=${testGi}, ${testName}`);
       
-      if (rowGi === testGi && rowName === testName) {
+      if (rowGi === parseInt(testGi, 10) && rowName === testName) {
         // null, undefined, 빈 문자열인 경우 false 반환
         if (status === null || status === undefined || status === "") {
           console.log("사용자 찾음! 명단 미납부 (null/empty)");
           return false;
         }
-        // O 또는 o인 경우만 true 반환
-        const result = status === "O" || status === "o";
+        const result = isPaidStatus(status);
         console.log("사용자 찾음! 명단 납부:", result);
         return result;
       }
@@ -329,4 +384,4 @@ function testCheckPaymentStatusSimple() {
     console.error("테스트 오류:", error);
     return false;
   }
-} 
+}

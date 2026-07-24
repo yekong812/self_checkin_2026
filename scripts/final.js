@@ -17,8 +17,9 @@ window.onload = async () => {
     qrcodeEl.style.display = "none";
   
     try {
-      const targetUrl = `https://script.google.com/macros/s/AKfycbwXWA6aXVnqGjH_D6pFeDoe7upZDXsN_dD8DcgSEc9ZfAHtrrTDSVPinxCZymPRLxxb/exec?action=getUserInfo&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+      const { APPS_SCRIPT_URL, CORS_PROXY_URL } = window.APP_CONFIG;
+      const targetUrl = `${APPS_SCRIPT_URL}?action=getUserInfo&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
+      const proxyUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
       const res = await fetch(proxyUrl);
   
       // Google Apps Script 응답은 text/plain으로 올 수 있으므로 헤더 체크 제거
@@ -49,17 +50,28 @@ window.onload = async () => {
         return;
       }
   
+      const showTshirt = !!window.APP_CONFIG.SHOW_TSHIRT_SIZE;
+      const tshirtSize = (data.tshirtSize || "").trim();
+
       // 사용자 정보 표시
-      const infoText = `
+      let infoText = `
         <p><strong>기수 :</strong> ${data.gi}</p>
         <p><strong>이름 :</strong> ${data.name}</p>
       `;
+      if (showTshirt) {
+        infoText += `<p><strong>티셔츠 :</strong> ${tshirtSize || "-"}</p>`;
+      }
       document.getElementById("info").innerHTML = infoText;
   
       // 텍스트 형식으로 QR 코드 데이터 생성
-      const qrText = `기수: ${data.gi}, 이름: ${data.name}`;
+      // SHOW_TSHIRT_SIZE === true 이면 반드시 "티셔츠: ..." 포함
+      let qrText = `기수: ${data.gi}, 이름: ${data.name}`;
+      if (showTshirt) {
+        qrText += `, 티셔츠: ${tshirtSize || "-"}`;
+      }
+      console.log("QR 원문:", qrText);
       
-      // 텍스트를 Base64로 인코딩
+      // 텍스트를 Base64로 인코딩 (스캔 후 DATA: 제거 → Base64 디코드하면 위 원문이 나옴)
       const encodedData = btoa(unescape(encodeURIComponent(qrText)));
       
       // QR 코드 생성

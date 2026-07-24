@@ -18,9 +18,10 @@ async function handleLogin() {
     loginBtn.disabled = true;
     loginBtn.textContent = "확인 중...";
     loadingEl.style.display = "block";
-  
-    const targetUrl = `https://script.google.com/macros/s/AKfycbwXWA6aXVnqGjH_D6pFeDoe7upZDXsN_dD8DcgSEc9ZfAHtrrTDSVPinxCZymPRLxxb/exec?action=verifyLoginAndPayment&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`; // ✅ 프록시 경유
+
+    const { APPS_SCRIPT_URL, CORS_PROXY_URL } = window.APP_CONFIG;
+    const targetUrl = `${APPS_SCRIPT_URL}?action=verifyLoginAndPayment&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
+    const proxyUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
 
   
     try {
@@ -65,4 +66,3 @@ async function handleLogin() {
       loadingEl.style.display = "none";
     }
   }
-  

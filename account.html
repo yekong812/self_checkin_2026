@@ -8,8 +8,8 @@
 </head>
 <body>
   <div class="container">
-    <div class="logo">I'm G-root</div>
-    <h2>회비 미납 안내</h2>
+    <div class="logo" id="brand-name">I'm G-root</div>
+    <h2 id="page-title">회비 미납 안내</h2>
     <ul class="notice-list">
       <li>아직 회비를 납부하지 않으셨습니다.</li>
       <li>납부 후 다시 로그인해주세요.</li>
@@ -20,15 +20,39 @@
 
     <div class="payment-box">
       <div class="payment-title">💳 회비 납부 안내</div>
-      <div class="payment-row"><b>카카오뱅크</b>  3333-33-8896038 (전수호)</div>
-      <div class="payment-row"><b>회비:</b>  20,000원</div>
-      <div class="payment-row"><b>입금자명:</b>  기수+이름 (예: 12황유상)</div>
+      <div class="payment-row" id="bank-row"><b>카카오뱅크</b>  3333-33-8896038 (전수호)</div>
+      <div class="payment-row" id="fee-row"><b>회비:</b>  20,000원</div>
+      <div class="payment-row" id="deposit-row"><b>입금자명:</b>  기수+이름 (예: 12황유상)</div>
     </div>
 
     <button onclick="goBack()">다시 로그인하기</button>
   </div>
 
+  <script src="./scripts/config.js"></script>
   <script>
+    (function applyConfig() {
+      const c = window.APP_CONFIG;
+      if (!c) return;
+      document.title = c.PAGE_TITLE_ACCOUNT;
+      const brand = document.getElementById("brand-name");
+      const title = document.getElementById("page-title");
+      if (brand) brand.textContent = c.BRAND_NAME;
+      if (title) title.textContent = c.PAGE_TITLE_ACCOUNT;
+
+      const bankRow = document.getElementById("bank-row");
+      const feeRow = document.getElementById("fee-row");
+      const depositRow = document.getElementById("deposit-row");
+      if (bankRow) {
+        bankRow.innerHTML = `<b>${c.BANK_NAME}</b>  ${c.BANK_ACCOUNT} (${c.BANK_HOLDER})`;
+      }
+      if (feeRow) {
+        feeRow.innerHTML = `<b>회비:</b>  ${c.FEE_AMOUNT}`;
+      }
+      if (depositRow) {
+        depositRow.innerHTML = `<b>입금자명:</b>  ${c.DEPOSIT_NAME_HINT}`;
+      }
+    })();
+
     function goBack() {
       window.location.href = "index.html";
     }
