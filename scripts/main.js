@@ -19,9 +19,9 @@ async function handleLogin() {
     loginBtn.textContent = "확인 중...";
     loadingEl.style.display = "block";
 
-    const { APPS_SCRIPT_URL, CORS_PROXY_URL } = window.APP_CONFIG;
+    const { APPS_SCRIPT_URL } = window.APP_CONFIG;
     const targetUrl = `${APPS_SCRIPT_URL}?action=verifyLoginAndPayment&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
-    const proxyUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = window.buildAppsScriptRequestUrl(targetUrl);
 
   
     try {

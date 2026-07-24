@@ -17,9 +17,9 @@ window.onload = async () => {
     qrcodeEl.style.display = "none";
   
     try {
-      const { APPS_SCRIPT_URL, CORS_PROXY_URL } = window.APP_CONFIG;
+      const { APPS_SCRIPT_URL } = window.APP_CONFIG;
       const targetUrl = `${APPS_SCRIPT_URL}?action=getUserInfo&gi=${encodeURIComponent(gi)}&name=${encodeURIComponent(name)}`;
-      const proxyUrl = `${CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+      const proxyUrl = window.buildAppsScriptRequestUrl(targetUrl);
       const res = await fetch(proxyUrl);
   
       // Google Apps Script 응답은 text/plain으로 올 수 있으므로 헤더 체크 제거

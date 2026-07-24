@@ -7,7 +7,7 @@ window.APP_CONFIG = {
   APPS_SCRIPT_URL:
     "https://script.google.com/macros/s/AKfycbw1mOO0VYX0X4BQBeAH31L8sTVuBQpX8CYF5RD3pVrmjitXxwL3GYH5LFzn_RwYg3HN/exec",
 
-  // CORS 프록시 (필요 시 변경)
+  // 로컬(Go Live)용 CORS 프록시 — 무료 플랜은 localhost만 허용
   CORS_PROXY_URL: "https://corsproxy.io/?",
 
   // 브랜드 / 페이지 제목
@@ -26,4 +26,18 @@ window.APP_CONFIG = {
   // 티셔츠 사이즈 (final.html 화면·QR 포함 여부)
   // true: 시트 D열 값을 최종 안내/QR에 표시 · false: 숨김
   SHOW_TSHIRT_SIZE: true,
+};
+
+/**
+ * Apps Script 요청 URL 만들기
+ * - localhost / 127.0.0.1 → corsproxy.io (Go Live)
+ * - 그 외(Vercel 등) → /api/proxy (서버리스, 403 없음)
+ */
+window.buildAppsScriptRequestUrl = function buildAppsScriptRequestUrl(targetUrl) {
+  const host = window.location.hostname;
+  const isLocal = host === "localhost" || host === "127.0.0.1" || host === "";
+  if (isLocal) {
+    return `${window.APP_CONFIG.CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
+  }
+  return `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
 };
