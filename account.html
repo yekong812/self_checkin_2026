@@ -36,7 +36,7 @@
       document.title = c.PAGE_TITLE_ACCOUNT;
       const brand = document.getElementById("brand-name");
       const title = document.getElementById("page-title");
-      if (brand) brand.textContent = c.BRAND_NAME;
+      if (brand) window.applyBrand(brand);
       if (title) title.textContent = c.PAGE_TITLE_ACCOUNT;
 
       const bankRow = document.getElementById("bank-row");

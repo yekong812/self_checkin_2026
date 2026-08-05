@@ -12,6 +12,10 @@ window.APP_CONFIG = {
 
   // 브랜드 / 페이지 제목
   BRAND_NAME: "압도",
+  // true: logo.png 이미지 표시 · false: BRAND_NAME 텍스트 표시
+  USE_BRAND_LOGO: true,
+  // 로고 파일 경로 (파일명은 항상 logo.png 로 두면 됨)
+  BRAND_LOGO_PATH: "logo.png",
   PAGE_TITLE_LOGIN: "사전 체크인",
   PAGE_TITLE_ACCOUNT: "회비 미납 안내",
   PAGE_TITLE_FINAL: "최종 안내",
@@ -40,4 +44,25 @@ window.buildAppsScriptRequestUrl = function buildAppsScriptRequestUrl(targetUrl)
     return `${window.APP_CONFIG.CORS_PROXY_URL}${encodeURIComponent(targetUrl)}`;
   }
   return `/api/proxy?url=${encodeURIComponent(targetUrl)}`;
+};
+
+/**
+ * 브랜드 영역 적용
+ * USE_BRAND_LOGO === true → logo.png 이미지
+ * USE_BRAND_LOGO === false → BRAND_NAME 텍스트
+ */
+window.applyBrand = function applyBrand(el) {
+  if (!el || !window.APP_CONFIG) return;
+  const c = window.APP_CONFIG;
+  if (c.USE_BRAND_LOGO) {
+    el.classList.add("is-image");
+    el.textContent = "";
+    const img = document.createElement("img");
+    img.src = c.BRAND_LOGO_PATH || "logo.png";
+    img.alt = c.BRAND_NAME || "logo";
+    el.appendChild(img);
+  } else {
+    el.classList.remove("is-image");
+    el.textContent = c.BRAND_NAME || "";
+  }
 };
