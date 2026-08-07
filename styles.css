@@ -31,18 +31,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 세로모드 강제 - orientation 속성 제거 */
-}
-
-/* 세로모드 강제 */
-@media screen and (orientation: landscape) {
-    body {
-        transform: rotate(90deg);
-        transform-origin: center center;
-        width: 100vh;
-        height: 100vw;
-        overflow-x: hidden;
-    }
 }
 
 /* 메인 컨테이너 박스 */
@@ -319,23 +307,13 @@ button, input {
     user-select: none;
 }
 
-/* 세로모드 강제 및 화면 고정 */
+/* 화면 고정 */
 html, body {
     overflow-x: hidden;
     overflow-y: auto;
     position: fixed;
     width: 100%;
     height: 100%;
-}
-
-/* 세로모드 강제 */
-@media screen and (orientation: landscape) {
-    html, body {
-        transform: rotate(90deg);
-        transform-origin: center center;
-        width: 100vh;
-        height: 100vw;
-    }
 }
 
 /* 스크롤 최적화 */
